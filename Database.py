@@ -5,6 +5,7 @@ from enum import Enum
 from textwrap import dedent, wrap
 from progress.bar import Bar
 import pickle
+from collections import defaultdict
 
 class chemical_category(Enum):
     PRODUCT = 0
@@ -99,13 +100,15 @@ class SpeciesMixture:
     # for increased ratio of fuel to oxy, add species multiple times
     species: List[Species]
     #caching for faster programming
-    Nj: Dict[str, float]
+    Nj: Dict[str, float] = {} 
     #end composition mixture for products is default all 1 mol at beginning
-    Sdict = Dict[str,Species]
+    Sdict : Dict[str,Species] = field(init=False)
 
     def _build_species_dict(self):
+        x = {}
         for s in self.species:
-            self.SDict[s.name] = s
+            x[s.name] = s
+        self.Sdict = x
 
     def initial_product_moles(self, guess = None) -> None:
         if guess == None:
@@ -199,3 +202,19 @@ class ThermoDatabase:
     Products        : Dict[str,Species] = field(init=False) 
     Reactants       : Dict[str,Species] = field(init=False)
     Transport       : Dict[str, List[TransportSpecies]] = field(init=False) 
+
+@dataclass
+class Problem:
+    # organizes the problem
+    fixed_pressure: float
+    fixed_temperature: float
+    Product_Mixture: SpeciesMixture
+    Reactant_Mixture: SpeciesMixture
+
+    def gibbs_product(self, species):
+        species = self.Product_Mixture._get_species(species)
+        n_ratio = self.Product_Mixture.nfraction(species.name)
+        return species.gibbs(self.fixed_temperature, n_ratio, self.fixed_pressure*n_ratio)
+
+    def gibbs_reactant(self, species):
+        pass

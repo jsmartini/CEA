@@ -74,6 +74,8 @@ def ParseThermoINP(fpath: str, database: ThermoDatabase):
                     # how the loop progresses through the info, ends on col 51 ( index 50 zero start)
                     #target_species.elements[line[10:12]] = int(line[14:18])
                     #target_species.elements[line[18:20]] = int(line[22:24])
+                if "  " in elements.keys():
+                    del elements["  "]
                 target_species.elements = elements
                 target_species.phase = float(line[51:53])
                 target_species.molecular_weight = float(line[55:66])
@@ -155,7 +157,7 @@ def ParseThermoINP(fpath: str, database: ThermoDatabase):
                         consts_list = list(map(cast, consts_list))
                         target_interval.cp_coefficients.extend(consts_list[0:2])
                         target_interval.b_constants = consts_list[2:]
-                        print(target_interval.b_constants)
+                        #print(target_interval.b_constants)
                         target_species.intervals.append(target_interval)
                         target_interval = Interval()
                         target_interval.cp_coefficients = []
@@ -256,7 +258,7 @@ def ParseTransINP(fpath:str, database: ThermoDatabase):
             return database
 
 
-def load_database_from_inp(thermo_fpath:str, trans_fpath:str):
+def load_database_from_inp(thermo_fpath:str="thermo.inp", trans_fpath:str="trans.inp"):
     db = ThermoDatabase()
     ParseThermoINP(thermo_fpath, db)
     ParseTransINP(trans_fpath, db)
