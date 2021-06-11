@@ -1,11 +1,12 @@
 from Database import *
 from Parser import *
+from utils import *
 
 global DB
 DB = load_database_from_inp()
 
 Reactants = ["O2(L)", "CH4(L)"]
-Products = ["CO2", "H2O", "CO"]
+Products = ["CO2", "H2O", "CO", "H2"]
 
 eg = Problem(
     fixed_pressure = 6, # bar
@@ -20,3 +21,8 @@ eg = Problem(
 
 eg.Product_Mixture._build_species_dict()
 eg.Reactant_Mixture._build_species_dict()
+
+from Solver import *
+
+solver = Solver(eg)
+matprint(solver._AMatrix())

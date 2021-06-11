@@ -27,7 +27,7 @@ class Species:
     name                : str = field(init=False) 
     info                : str = field(init=False) 
     source              : str = field(init=False) 
-    intervals_cnt       : int = field(init=False) 
+    intervals_cnt       : int = field(default=0) 
     elements            : Dict[str,int] = field(init=False) 
     molecular_weight    : float = field(init=False)     # g/mol
     heat_of_formation   : float = field(init=False)   # Jmol
@@ -100,9 +100,13 @@ class SpeciesMixture:
     # for increased ratio of fuel to oxy, add species multiple times
     species: List[Species]
     #caching for faster programming
-    Nj: Dict[str, float] = {} 
+    Nj: Dict[str, float] = field(init=False)
+    N: float = field(init=False)
     #end composition mixture for products is default all 1 mol at beginning
     Sdict : Dict[str,Species] = field(init=False)
+
+    def __post_init__(self):
+        self.initial_product_moles()
 
     def _build_species_dict(self):
         x = {}
@@ -110,7 +114,7 @@ class SpeciesMixture:
             x[s.name] = s
         self.Sdict = x
 
-    def initial_product_moles(self, guess = None) -> None:
+    def initial_product_moles(self, guess = None):
         if guess == None:
             #crude guess
             self.Nj = {s.name:0.1/len(self.species) for s in self.species}
@@ -118,15 +122,13 @@ class SpeciesMixture:
             self.Nj = guess
         self.N = 0.1
 
-    @lru_cache
     def _get_species(self, species:str):
         for s in self.species:
             if species == s.name:
                 return s
-            return None
+        return None
     
-    @lru_cache()
-    def molecular_weight(self) -> float:
+    def molecular_weight(self):
         return np.sum(
             [
                 species.molecular_weight * self.Nj*[species.name]/self.N
@@ -134,23 +136,21 @@ class SpeciesMixture:
             ]
         )
 
-    def Nj(self) -> dict:
+    def _Nj(self):
         return self.Nj
 
-    @lru_cache()
-    def nfraction(self, species:str) -> float:
+    def nfraction(self, species:str):
         return self.Nj[species]/self.N
 
-    @lru_cache()
-    def get_elements_species(self, species:str) -> dict:
-        return self._get_elements(species).elements
+    
+    def get_elements_species(self, species:str):
+        return self._get_species(species).elements
 
-    @lru_cache()
     def get_elements_global(self):
         elements_global = {}
         for s in self.species:
             for elm, cnt in s.elements.items():
-                x = self.mols[s.name] * cnt
+                x = self.Nj[s.name] * cnt
                 if elm in elements_global.keys():
                     elements_global[elm] += x
                 else:
